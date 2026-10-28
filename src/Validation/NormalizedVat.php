@@ -2,11 +2,11 @@
 
 namespace App\Validation;
 
-final class NormalizedVat {
+final readonly class NormalizedVat {
     public function __construct(
-    public readonly ?string $country = null,
-    public readonly ?string $code = null,
-    public readonly ?string $omitReason = null
+    public ?string $country = null,
+    public ?string $code = null,
+    public ?string $omitReason = null
     )
     {}
 }
