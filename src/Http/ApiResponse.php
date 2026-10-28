@@ -1,10 +1,10 @@
 <?php
 namespace App\Http;
 
-class ApiResponse {
+final readonly class ApiResponse {
     public function __construct(
-    public readonly ?int $status = null,
-    public readonly ?array $body = null,
-    public readonly ?string $error = null)
+    public ?int $status = null,
+    public ?array $body = null,
+    public ?string $error = null)
     {}
 }
