@@ -12,15 +12,19 @@ class ApiClient {
         $this->client = $client;
     }
     // Peticion Generica de la API - Metodo(GET/Post...), ruta a la que hacer peticion, body de la request
-    public function apiRequest(string $requestMethod, string $requestRoute, ?array $body = null): ApiResponse {
+    public function apiRequest(string $requestMethod, string $requestRoute, ?array $body = null, ?array $query = null): ApiResponse {
         try {
             // Si el body esta vacio no se envia nada en la request
             $options = []; // Array asociativo con los parametros del body
             if ($body !== null) {
                 $options['json'] = $body;
             }
+            if ($query !== null) {
+                $options['query'] = $query;
+            }
             $response = $this->client->request($requestMethod,$requestRoute, $options);
             $textoBody = (string) $response->getBody();
+            // Devuelve lo siguiente: Codigo: 200,404,500... | El body devuelve un array asociativo $respuesta->body["campo"]
             return new ApiResponse(status: $response->getStatusCode(), body: json_decode($textoBody, true));
         } catch (GuzzleException $e) {
             return new ApiResponse(error: $e->getMessage());
