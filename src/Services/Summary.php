@@ -12,6 +12,7 @@ class Summary  {
         Status::Omitido->value => 0,
         Status::ErrorTemporal->value => 0
     ];
+    public int $failCounter = 0;
     public function add(ValidationResult $result): void {
         $this->valueCounters[$result->status->value]++;
     }
@@ -31,6 +32,7 @@ class Summary  {
         }
         // Anadir el total
         $text .= "TOTAL: " . $this->total() . PHP_EOL;
+        $text .= "Fallos: " . $this->failCounter . PHP_EOL;
         return $text;
     }
 }
