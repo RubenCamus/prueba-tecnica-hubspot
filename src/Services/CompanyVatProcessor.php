@@ -1,5 +1,5 @@
 <?php
-namespace App\Service;
+namespace App\Services;
 
 use App\Validation\Status;
 use App\Validation\ValidationResult;
