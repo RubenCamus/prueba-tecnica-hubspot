@@ -5,57 +5,89 @@ use App\Http\ApiClient;
 use App\Http\ApiResponse;
 use App\Validation\ValidationResult;
 use Exception;
-$config = require __DIR__ . '/../../config.php';
-class HubSpotClient {
+use Generator;
+
+class HubSpotClient
+{
+    private const BASE_PATH = 'crm/objects/2026-09/companies';
+    private const PAGE_LIMIT = 200;
+
+    private const PROP_NIF = 'nif_cif_vat';
+    private const PROP_ESTADO = 'vies_ruben_estado';
+    private const PROP_FECHA = 'vies_ruben_fecha';
+    private const PROP_MOTIVO = 'vies_ruben_motivo';
 
     public function __construct(private ApiClient $apiClient)
-    {}
-    // Iterar las companies que no se hayan pasado todavia OR las que hayan dado un ERROR_TEMPORAL
-    public function fetchPendingCompanies() {
-        $all = [];
-        $after = null;
-        do {
-        $body = [
-        'filterGroups' => [
-            ['filters' => [
-                ['propertyName' => 'nif_cif_vat', 'operator' => 'HAS_PROPERTY'],
-                ['propertyName' => 'vies_ruben_estado', 'operator' => 'NOT_HAS_PROPERTY']
-            ],
-            ],
-            ['filters' => [
-                ['propertyName' => 'nif_cif_vat', 'operator' => 'HAS_PROPERTY'],
-                ['propertyName' => 'vies_ruben_estado', 'operator' => 'EQ', 'value' => 'ERROR_TEMPORAL']
-            ],
-            ],
-        ],
-        'limit' => 200,
-        'properties' => ['nif_cif_vat', 'vies_ruben_estado','vies_ruben_fecha','vies_ruben_motivo'],
-        'sorts' => [['propertyName' => 'hs_object_id', 'direction' => 'ASCENDING']],
-        ];
-        if ($after!==null) {
-            $body['after'] = $after;
-        }
-        $response = $this->apiClient->apiRequest('POST', 'crm/objects/2026-09/companies/search', body:$body);
-        if ($response->status !== 200) {
-            throw new Exception("Error al buscar empresas: " . ($response->error ?? json_encode($response->body)));
-        }
-        $after = $response->body['paging']['next']['after'] ?? null;
-        $results = $response->body['results'];
-        $all = array_merge($all, $results); // Mergear arrays para mantenerlo todo dentro de 1 mismo array
-        } while($after !== null);
-
-        return $all;
+    {
     }
-    public function updateViesFields(string $companyId , ValidationResult $result): ApiResponse {
-        return $this->apiClient->apiRequest('PATCH', 'crm/objects/2026-09/companies/' . $companyId, body: [
+
+    public function fetchPendingCompanies(): array
+    {
+        $body = [
+            'filterGroups' => [
+                $this->filterGroup(['propertyName' => self::PROP_ESTADO, 'operator' => 'NOT_HAS_PROPERTY']),
+                $this->filterGroup(['propertyName' => self::PROP_ESTADO, 'operator' => 'EQ', 'value' => 'ERROR_TEMPORAL']),
+            ],
+            'properties' => [self::PROP_NIF, self::PROP_ESTADO, self::PROP_FECHA, self::PROP_MOTIVO],
+            'sorts' => [['propertyName' => 'hs_object_id', 'direction' => 'ASCENDING']],
+        ];
+
+        return iterator_to_array($this->paginate('search', $body), false);
+    }
+
+    public function updateViesFields(string $companyId, ValidationResult $result): ApiResponse
+    {
+        return $this->request('PATCH', $companyId, [
             'properties' => [
-                'vies_ruben_estado' => $result->status->value,
-                'vies_ruben_fecha' => $result->date ?? '',
-                'vies_ruben_motivo' => $result->reason ?? '',
+                self::PROP_ESTADO => $result->status->value,
+                self::PROP_FECHA => $result->date ?? '',
+                self::PROP_MOTIVO => $result->reason ?? '',
             ],
         ]);
     }
 
+    private function paginate(string $path, array $body): Generator
+    {
+        $body['limit'] = self::PAGE_LIMIT;
+        $after = null;
 
+        do {
+            if ($after !== null) {
+                $body['after'] = $after;
+            }
+
+            $response = $this->request('POST', $path, $body);
+
+            yield from $response->body['results'] ?? [];
+
+            $after = $response->body['paging']['next']['after'] ?? null;
+        } while ($after !== null);
+    }
+
+    private function request(string $method, string $path = '', array $body = []): ApiResponse
+    {
+        $url = rtrim(self::BASE_PATH . '/' . $path, '/');
+        $response = $this->apiClient->apiRequest($method, $url, body: $body);
+
+        if ($response->status < 200 || $response->status >= 300) {
+            throw new Exception(sprintf(
+                'Error en %s %s: %s',
+                $method,
+                $url,
+                $response->error ?? json_encode($response->body)
+            ));
+        }
+
+        return $response;
+    }
+
+    private function filterGroup(array ...$filters): array
+    {
+        return [
+            'filters' => [
+                ['propertyName' => self::PROP_NIF, 'operator' => 'HAS_PROPERTY'],
+                ...$filters,
+            ],
+        ];
+    }
 }
-?>
