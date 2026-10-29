@@ -28,7 +28,7 @@ class HubSpotClient {
             ],
             ],
         ],
-        'limit' => 2,
+        'limit' => 200,
         'properties' => ['nif_cif_vat', 'vies_ruben_estado','vies_ruben_fecha','vies_ruben_motivo'],
         'sorts' => [['propertyName' => 'hs_object_id', 'direction' => 'ASCENDING']],
         ];
