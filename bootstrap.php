@@ -1,7 +1,7 @@
 <?php
 require __DIR__ . '/vendor/autoload.php';
-require __DIR__ . '/src/ApiClient.php';
-require __DIR__ . '/src/ApiResponse.php';
+use App\Http\ApiClient;
+use App\Http\ApiResponse;
 $config = require __DIR__ . '/config.php';
 use GuzzleHttp\Client;
 
@@ -39,8 +39,6 @@ function handleResponse(ApiResponse $response) {
 
 // FLUJO EJECUCION
 
-// Crear cliente GUZZLE - En Headers pasamos la serviceKey.
-// Importante http_errors false para poder gestionar nosotros los error 4xx y 5xx
 $apiClient = new ApiClient(new Client($config['hubspotOptions']));
 
 // CREAR Grupo de Propiedades
