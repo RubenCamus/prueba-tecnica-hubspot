@@ -2,6 +2,8 @@
 namespace App\Hubspot;
 
 use App\Http\ApiClient;
+use App\Http\ApiResponse;
+use App\Validation\ValidationResult;
 use Exception;
 $config = require __DIR__ . '/../../config.php';
 class HubSpotClient {
@@ -43,6 +45,15 @@ class HubSpotClient {
         } while($after !== null);
 
         return $all;
+    }
+    public function updateViesFields(string $companyId , ValidationResult $result): ApiResponse {
+        return $this->apiClient->apiRequest('PATCH', 'crm/objects/2026-09/companies/' . $companyId, body: [
+            'properties' => [
+                'vies_ruben_estado' => $result->status->value,
+                'vies_ruben_fecha' => $result->date ?? '',
+                'vies_ruben_motivo' => $result->reason ?? '',
+            ],
+        ]);
     }
 
 
